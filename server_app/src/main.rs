@@ -1,69 +1,84 @@
-use actix_web::{web, App, HttpResponse, HttpServer};
+//adapting this over to using Axum from actix was achieved with help from DeepSeek. 
+
+use axum::{
+    extract::Form,
+    response::Html,
+    routing::{get, post},
+    Router,
+};
 use serde::Deserialize;
+use std::net::SocketAddr;
 
-
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 struct EnvironmentalActionParameters {
     action: String,
     topic: String,
 }
 
-async fn post_response(form: web::Form<EnvironmentalActionParameters<>>) -> HttpResponse {
-    if form.action =="".to_string() && form.topic =="".to_string() {
-        return HttpResponse::BadRequest()
-      .content_type("text/html")
-      .body("Please enter what you did as your Environmental Action in the first box. Please type a topic you believe it could belong to in the second box. \n
-            Action: Rode bike to work    Topic: Transportation");
+async fn post_response(Form(form): Form<EnvironmentalActionParameters>) -> Html<String> {
+    if form.action.is_empty() && form.topic.is_empty() {
+        return Html(
+            "Please enter what you did as your Environmental Action in the first box. \
+            Please type a topic you believe it could belong to in the second box. \n\
+            Action: Rode bike to work    Topic: Transportation".to_string(),
+        );
     }
 
     let response = format!(
-        "Good job. Your action of {} has been added to the environmental bucket under topic {}. /n{}",
-        form.action, form.topic, add_to_database(&form.action,&form.topic));
-    
+        "Good job. Your action of {} has been added to the environmental bucket under topic {}. \n{}",
+        form.action,
+        form.topic,
+        add_to_database(&form.action, &form.topic)
+    );
 
-
-
-    HttpResponse::Ok().content_type("text/html").body(response)
+    Html(response)
 }
-
-
-
-#[actix_web::main]
-async fn main() {
-    let server = HttpServer::new(|| {
-        App::new()
-            .route("/", web::get().to(get_index))
-            .route("/add_to_database", web::post().to(post_response))
-    });
-
-    println!("Serving on http://localhost:3000...");
-    server
-        .bind("127.0.0.1:3000")
-        .expect("error binding server to address")
-        .run()
-        .await
-        .expect("error running server");
-}
-
-async fn get_index() -> HttpResponse {
-    HttpResponse::Ok().content_type("text/html").body(
+async fn get_index() -> Html<&'static str> {
+    Html(
         r#"
-           <title>Add your Action</title>
-           <form action="/add_to_database" method="post">
-           <input type="text" name="action"/>
-           <input type="text" name="topic"/>
-           <button type="submit">Add to Bucket</button>
-           </form>
-           "#,
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Add your Action</title>
+        </head>
+        <body>
+            <h1>DROP IN THE BUCKET</h1>
+            <form action="/add_to_database" method="post">
+                <label for="action">Action you did to help the environment:</label><br>
+                <input type="text" id="action" name="action"/><br><br>
+                
+                <label for="topic">Action Category:</label><br>
+                <input type="text" id="topic" name="topic"/><br><br>
+                
+                <button type="submit">Add to Bucket</button>
+            </form>
+            <br>
+            <form action="/display_responses" method="get">
+                <button type="submit">Display Responses</button>
+            </form>
+        </body>
+        </html>
+        "#,
     )
 }
 
+fn add_to_database(action: &str, topic: &str) -> String {
+    "...\n  nothing more is implemented yet. Code writer needs to work on the database function!".to_string()
+}
 
+#[tokio::main]
+async fn main() {
+    let app = Router::new()
+        .route("/", get(get_index))
+        .route("/add_to_database", post(post_response));
 
-fn add_to_database<'a>(action: &'a str, topic: &'a str) -> String {
-    
-        return ".../n  nothing more is implemented yet. Code writer needs to work on the database function!".to_string()
-    
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    println!("Serving on http://{}...", addr);
+
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }
 /*
 fn _separate_str_by_word{
