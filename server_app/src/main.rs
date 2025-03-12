@@ -42,7 +42,12 @@ async fn get_index() -> Html<&'static str> {
             <title>Add your Action</title>
         </head>
         <body>
-            <h1>DROP IN THE BUCKET</h1>
+            <h1>DROP IN THE BUCKET:  Please enter any action you took today to help 
+            the environment in the first box.
+            Please enter a potential category you believe that action could belong
+            to in the second box.
+            Here are some examples: 
+            Action: Rode bike to work                  Topic: Transportation </h1>
             <form action="/add_to_database" method="post">
                 <label for="action">Action you did to help the environment:</label><br>
                 <input type="text" id="action" name="action"/><br><br>
