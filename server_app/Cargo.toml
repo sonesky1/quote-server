@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 actix = "0.13.5"
 actix-web = "4.1"
-serde = {version = "1.0", features = ["derive"]}
-axum = "0.6"
-tokio = { version = "1.0", features = ["full"] }
+axum = "0.7"                     # Web framework
+tokio = { version = "1", features = ["full"] }  # Async runtime
+sea-orm = { version = "0.12", features = ["sqlx-sqlite", "runtime-tokio-native-tls"] } # ORM & SQLite
+serde = { version = "1", features = ["derive"] }  # Serialization/Deserialization
+tower-http = { version = "0.5", features = ["fs"] }  # Optional: Serve static files
+ 
