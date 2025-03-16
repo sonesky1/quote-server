@@ -6,11 +6,12 @@ use axum::{
     Router,
 };
 use serde::Deserialize;
-use sea_orm::{Database, DatabaseConnection, ConnectionTrait, Statement, DbBackend};
+use sea_orm::{Database, DatabaseConnection, ConnectionTrait, Statement, DbBackend, DbErr};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use std::io;
 use tokio::net::TcpListener;
+
 
 #[derive(Deserialize)]
 struct EnvironmentalActionParameters {
@@ -18,10 +19,53 @@ struct EnvironmentalActionParameters {
     topic: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct QueryForm {
+    name: String,
+}
+
+
 // Define a type for the shared state
 #[derive(Clone)]
 struct AppState {
     db: Arc<Mutex<DatabaseConnection>>,
+}
+
+
+//adapted from DeepSeek.com AI
+async fn retrieve_data(db: &DatabaseConnection) -> Result<Vec<EnvironmentalActionParameters>, DbErr> {
+  // prep query for SQL
+  let sql = "SELECT action, topic FROM environmental_actions";
+  let statement = Statement::from_string(DbBackend::Sqlite, sql.to_owned());
+
+  //execute query and map results to the EnvironmentalActionParameters
+  let data_retrieved = db.query_all(statement)
+  .await?
+  .into_iter()
+  .map(|row| {
+        EnvironmentalActionParameters {
+            action: row.try_get::<String>("", "action").unwrap(),
+            topic: row.try_get::<String>("", "topic").unwrap(),
+
+        }
+})
+.collect();
+
+Ok(data_retrieved)
+
+}
+
+fn format_data_as_html(data_retrieved: Vec<EnvironmentalActionParameters>) -> String {
+    let mut html = String::from("<table border='1'><tr><th>Action</th><th>Topic</th></tr>");
+
+    for data in data_retrieved {
+        html.push_str(&format!(
+            "<tr><td>{}</td><td>{}</td></tr>",
+         data.action, data.topic
+        ));
+    }
+    html.push_str("</table>");
+    html
 }
 
 async fn post_response(
@@ -40,12 +84,12 @@ async fn post_response(
     let db = state.db.lock().await;
 
     // Example: Insert the action and topic into the database
-    let insert_sql = format!(
+    let add_to_database = format!(
         "INSERT INTO environmental_actions (action, topic) VALUES ('{}', '{}');",
         form.action, form.topic
     );
 
-    db.execute(Statement::from_string(DbBackend::Sqlite, insert_sql))
+    db.execute(Statement::from_string(DbBackend::Sqlite, add_to_database))
         .await
         .expect("Failed to insert into environmental_actions table");
 
@@ -54,9 +98,23 @@ async fn post_response(
         form.action,
         form.topic,
     );
-
+    
+    let data_response = get_data(db);
     Html(response)
 }
+//my other one
+
+async fn get_data(
+    State(db):State<Arc<Mutex<DatabaseConnection>>>,
+  
+) -> Html<String>{
+    let db = db.lock().await;
+    let data = retrieve_data(&db).await.expect("Failure to get data");
+    let data_post = format_data_as_html(data);
+
+    Html(data_post)
+}
+
 
 async fn get_index() -> Html<&'static str> {
     Html(
@@ -82,10 +140,13 @@ async fn get_index() -> Html<&'static str> {
                 
                 <button type="submit">Add to Bucket</button>
             </form>
-            <br>
-            <form action="/display_responses" method="get">
-                <button type="submit">Display Responses</button>
+
+            <h2>Display Responses</h2>
+            <form action="/query" method="post">
+                <button type="submit">Display All Responses</button>
             </form>
+        
+            
         </body>
         </html>
         "#,
@@ -127,6 +188,7 @@ async fn main() -> io::Result<()> {
     let app = Router::new()
         .route("/", get(get_index))
         .route("/add_to_database", post(post_response))
+        .route("/query", post(get_data(state)))
         .with_state(state);
 
     // Serve the app
