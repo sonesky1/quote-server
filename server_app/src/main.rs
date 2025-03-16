@@ -1,3 +1,4 @@
+use actix_web::web::Query;
 //adapting this over to using Axum from actix was achieved with help from DeepSeek. 
 use axum::{
     extract::{Form, State},
@@ -19,8 +20,8 @@ struct EnvironmentalActionParameters {
     topic: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct QueryForm {
+#[derive(Deserialize)]
+struct TheData {
     name: String,
 }
 
@@ -68,7 +69,7 @@ fn format_data_as_html(data_retrieved: Vec<EnvironmentalActionParameters>) -> St
     html
 }
 
-async fn post_response(
+async fn add_data_handler(
     State(state): State<AppState>,
     Form(form): Form<EnvironmentalActionParameters>,
 ) -> Html<String> {
@@ -99,16 +100,16 @@ async fn post_response(
         form.topic,
     );
     
-    let data_response = get_data(db);
+    //let data_response = get_data(db);
     Html(response)
 }
 //my other one
 
 async fn get_data(
-    State(db):State<Arc<Mutex<DatabaseConnection>>>,
-  
+    State(state): State<AppState>,
+    //Form(query):Form<Query>,
 ) -> Html<String>{
-    let db = db.lock().await;
+    let db = state.db.lock().await;
     let data = retrieve_data(&db).await.expect("Failure to get data");
     let data_post = format_data_as_html(data);
 
@@ -142,7 +143,7 @@ async fn get_index() -> Html<&'static str> {
             </form>
 
             <h2>Display Responses</h2>
-            <form action="/query" method="post">
+            <form action="/get_data" method="post">
                 <button type="submit">Display All Responses</button>
             </form>
         
@@ -187,8 +188,8 @@ async fn main() -> io::Result<()> {
     // Build the router with the shared state
     let app = Router::new()
         .route("/", get(get_index))
-        .route("/add_to_database", post(post_response))
-        .route("/query", post(get_data(state)))
+        .route("/add_to_database", post(add_data_handler))
+        .route("/query", post(get_data))
         .with_state(state);
 
     // Serve the app
