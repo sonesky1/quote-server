@@ -1,15 +1,12 @@
-use actix_web::web::Query;
+use actix_web::{web::Query, Error};
 //adapting this over to using Axum from actix was achieved with help from DeepSeek. 
 use axum::{
-    extract::{Form, State},
-    response::Html,
-    routing::{get, post},
-    Router,
+    extract::{Form, State}, response::Html, routing::{get, post}, Router
 };
 use serde::Deserialize;
 use sea_orm::{Database, DatabaseConnection, ConnectionTrait, Statement, DbBackend, DbErr};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+//use tokio::sync::Mutex;
 use std::io;
 use tokio::net::TcpListener;
 
@@ -26,19 +23,21 @@ struct TheData {
 }
 
 
-// Define a type for the shared state
+/*Define a type for the shared state
 #[derive(Clone)]
 struct AppState {
-    db: Arc<Mutex<DatabaseConnection>>,
+    db: Arc<DatabaseConnection>,
 }
-
+*/
 
 //adapted from DeepSeek.com AI
-async fn retrieve_data(db: &DatabaseConnection) -> Result<Vec<EnvironmentalActionParameters>, DbErr> {
+async fn retrieve_data(db: Arc<DatabaseConnection> ) -> Result<Vec<EnvironmentalActionParameters>, DbErr> {
   // prep query for SQL
   let sql = "SELECT action, topic FROM environmental_actions";
   let statement = Statement::from_string(DbBackend::Sqlite, sql.to_owned());
-
+// Access the shared database state
+  //let db = db.lock().await;
+  let db = db;
   //execute query and map results to the EnvironmentalActionParameters
   let data_retrieved = db.query_all(statement)
   .await?
@@ -57,20 +56,20 @@ Ok(data_retrieved)
 }
 
 fn format_data_as_html(data_retrieved: Vec<EnvironmentalActionParameters>) -> String {
-    let mut html = String::from("<table border='1'><tr><th>Action</th><th>Topic</th></tr>");
+    let mut to_display   = String::from("<table border='1'><tr><th>Action</th><th>Topic</th></tr>");
 
     for data in data_retrieved {
-        html.push_str(&format!(
+        to_display.push_str(&format!(
             "<tr><td>{}</td><td>{}</td></tr>",
          data.action, data.topic
         ));
     }
-    html.push_str("</table>");
-    html
+    to_display.push_str(&format!("</table>"));
+    to_display
 }
 
 async fn add_data_handler(
-    State(state): State<AppState>,
+    State(state): State<Arc<DatabaseConnection>>,
     Form(form): Form<EnvironmentalActionParameters>,
 ) -> Html<String> {
     if form.action.is_empty() && form.topic.is_empty() {
@@ -82,8 +81,8 @@ async fn add_data_handler(
     }
 
     // Access the shared database state
-    let db = state.db.lock().await;
-
+    //let db = state.db.lock().await;
+     let db = state.clone();
     // Example: Insert the action and topic into the database
     let add_to_database = format!(
         "INSERT INTO environmental_actions (action, topic) VALUES ('{}', '{}');",
@@ -94,23 +93,31 @@ async fn add_data_handler(
         .await
         .expect("Failed to insert into environmental_actions table");
 
-    let response = format!(
+    let _response_0 = format!(
         "Good job. Your action of {} has been added to the environmental bucket under topic {}.",
         form.action,
         form.topic,
     );
+    //let vector_from_database: Vec<EnvironmentalActionParameters> = retrieve_data(&db);
+    //let _vector  = retrieve_data(&db).await;
     
-    //let data_response = get_data(db);
-    Html(response)
+    //let the_data_vector: Result<Vec<EnvironmentalActionParameters>, DbErr> = retrieve_data(&db).await;
+     let response: Html<String> = get_data(axum::extract::State(state)).await;
+    //Ok()
+    //let response = format_data_as_html(the_data_vector);
+   // //let data_response = get_data(db);
+    //let response:String = "something".to_string();
+    response
 }
 //my other one
 
 async fn get_data(
-    State(state): State<AppState>,
+    
+    State(state): State<Arc<DatabaseConnection>>,
     //Form(query):Form<Query>,
 ) -> Html<String>{
-    let db = state.db.lock().await;
-    let data = retrieve_data(&db).await.expect("Failure to get data");
+    let db = state;
+    let data = retrieve_data(db).await.expect("Failure to get data");
     let data_post = format_data_as_html(data);
 
     Html(data_post)
@@ -180,17 +187,18 @@ async fn main() -> io::Result<()> {
     println!("environmental_actions table in entries_database is set up safely for async!");
 
     // Use Arc + Mutex to share the database safely in async code
-    let shared_db = Arc::new(Mutex::new(db));
+    let state = Arc::new(db);
 
     // Define the shared state
-    let state = AppState { db: shared_db };
-
+    //let state = db.clone();
+     
     // Build the router with the shared state
     let app = Router::new()
         .route("/", get(get_index))
         .route("/add_to_database", post(add_data_handler))
-        .route("/query", post(get_data))
-        .with_state(state);
+        //.route("/query", post(get_data))
+        .with_state(state.into());
+       
 
     // Serve the app
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
