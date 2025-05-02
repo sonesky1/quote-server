@@ -12,25 +12,25 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 
 #[derive(Deserialize)]
-struct EnvironmentalActionParameters {
+struct Quotes{
     action: String,
     topic: String,
 }
 
 async fn retrieve_data(
     db: Arc<DatabaseConnection>,
-) -> Result<Vec<EnvironmentalActionParameters>, DbErr> {
+) -> Result<Vec<Quotes>, DbErr> {
     // prep query for SQL
     let sql = "SELECT action, topic FROM environmental_actions";
     let statement = Statement::from_string(DbBackend::Sqlite, sql.to_owned());
 
     let db = db;
-    //execute query and map results to the EnvironmentalActionParameters
+    //execute query and map results to the quotes
     let data_retrieved = db
         .query_all(statement)
         .await?
         .into_iter()
-        .map(|row| EnvironmentalActionParameters {
+        .map(|row| Quotes {
             action: row.try_get::<String>("", "action").unwrap(),
             topic: row.try_get::<String>("", "topic").unwrap(),
         })
@@ -41,7 +41,7 @@ async fn retrieve_data(
 
 //receives input from the database and pushes it into a table format in html
 
-fn format_data_as_html(data_retrieved: Vec<EnvironmentalActionParameters>) -> String {
+fn format_data_as_html(data_retrieved: Vec<Quotes>) -> String {
     let mut to_display = String::from("<table border='1'><tr><th>Action</th><th>Topic</th></tr>");
 
     for data in data_retrieved {
@@ -57,14 +57,13 @@ fn format_data_as_html(data_retrieved: Vec<EnvironmentalActionParameters>) -> St
 
 async fn add_data_handler(
     State(state): State<Arc<DatabaseConnection>>,
-    Form(form): Form<EnvironmentalActionParameters>,
+    Form(form): Form<Quotes>,
 ) -> Html<String> {
     if form.action.is_empty() || form.topic.is_empty() {
         //if either form is empty then an error message is returned
         return Html(
-            "Please enter what you did as your Environmental Action in the first box. \
-            Please type a topic you believe it could belong to in the second box. \
-            Action: Rode bike to work    Topic: Transportation"
+            "Please enter a quote in the first box. \
+            Please type an author in the second box"
                 .to_string(),
         );
     }
@@ -72,7 +71,7 @@ async fn add_data_handler(
     // Access the shared database state
 
     let db = state.clone();
-    // Example: Insert the action and topic into the database
+    // Example: Insert the quote and author  into the database
     let add_to_database = format!(
         "INSERT INTO environmental_actions (action, topic) VALUES ('{}', '{}');",
         form.action, form.topic
@@ -104,22 +103,20 @@ async fn get_index() -> Html<&'static str> {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Add your Action</title>
+            <title>Quote Server</title>
         </head>
         <body>
-            <h1>DROP IN THE BUCKET: <br \> Please enter any action you took today to help 
-            the environment in the first box. Please enter a potential category you believe that action could belong
-            to in the second box. <br \><br \>
+            <h1>QUOTE SERVER: <br \> Please enter a quote or word of wisdom in first box. Please enter an author in the second box <br \><br \>
             EXAMPLE: <br \>
-            Action: Rode bike to work <br \>
-            Topic: Transportation <br/> 
+            Quote: El barato cuesta caro (What is cheap is expensive) <br \>
+            Author: Unknown, Spanish dicho <br/> 
             </h1>
             <form action="/add_to_database" method="post">
-                <label for="action">Action you did to help the environment:</label><br>
+                <label for="action">Quote:</label><br>
                 <input type="text" id="action" name="action"/><br><br>
-                <label for="topic">Action Category:</label><br>
+                <label for="topic">Author:</label><br>
                 <input type="text" id="topic" name="topic"/><br><br>
-                <button type="submit">Add to Bucket</button>
+                <button type="submit">Add to Quote Database</button>
             </form>            
         </body>
         </html>
