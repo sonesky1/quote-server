@@ -1,9 +1,9 @@
-# drop-in-the-bucket
+# quote-server
 
 Application Author:
 Susan Onesky
 
-First Date of Publication: 5/2/25 
+First Date of Publication: 5/2/25 . This is based partially off a previous project for the initial set up as it is similar to what is being done in Full Stack Rust. It will have more features and functionality added. 
 
 Project Name:
 quote-server    : A server that uses AXUM, tokio, RUST and SeaORM that displays quotes, authenticates users for security and allows users to enter quotes.
@@ -37,11 +37,9 @@ Further possibilities for Development:
 Buttons that will be on the view data page to display additional data. Example calls will include:
 View 3 most recent quotes entered
 View 1 random quotes
-Server entry location for quotes and date a quote was entered by a user
 User authentication for app safety
 Categorizing by topic and grouping similar responses
-filtering of bad responses (censoring ?) before adding to database, perhaps using AI
-Avoid spamming of site by a bad agent, shut down client, prevent access
+
 
 
 
