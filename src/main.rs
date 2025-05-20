@@ -13,15 +13,15 @@ use tokio::net::TcpListener;
 
 #[derive(Deserialize)]
 struct Quotes{
-    action: String,
-    topic: String,
+    quote: String,
+    author: String,
 }
 
 async fn retrieve_data(
     db: Arc<DatabaseConnection>,
 ) -> Result<Vec<Quotes>, DbErr> {
     // prep query for SQL
-    let sql = "SELECT action, topic FROM environmental_actions";
+    let sql = "SELECT quote, author FROM quotes_table";
     let statement = Statement::from_string(DbBackend::Sqlite, sql.to_owned());
 
     let db = db;
@@ -31,8 +31,8 @@ async fn retrieve_data(
         .await?
         .into_iter()
         .map(|row| Quotes {
-            action: row.try_get::<String>("", "action").unwrap(),
-            topic: row.try_get::<String>("", "topic").unwrap(),
+            quote: row.try_get::<String>("", "quote").unwrap(),
+            author: row.try_get::<String>("", "author").unwrap(),
         })
         .collect();
 
@@ -42,12 +42,12 @@ async fn retrieve_data(
 //receives input from the database and pushes it into a table format in html
 
 fn format_data_as_html(data_retrieved: Vec<Quotes>) -> String {
-    let mut to_display = String::from("<table border='1'><tr><th>Action</th><th>Topic</th></tr>");
+    let mut to_display = String::from("<table border='1'><tr><th>Quote</th><th>Author</th></tr>");
 
     for data in data_retrieved {
         to_display.push_str(&format!(
             "<tr><td>{}</td><td>{}</td></tr>",
-            data.action, data.topic
+            data.quote, data.author
         ));
     }
     
@@ -59,7 +59,7 @@ async fn add_data_handler(
     State(state): State<Arc<DatabaseConnection>>,
     Form(form): Form<Quotes>,
 ) -> Html<String> {
-    if form.action.is_empty() || form.topic.is_empty() {
+    if form.quote.is_empty() || form.author.is_empty() {
         //if either form is empty then an error message is returned
         return Html(
             "Please enter a quote in the first box. \
@@ -73,13 +73,13 @@ async fn add_data_handler(
     let db = state.clone();
     // Example: Insert the quote and author  into the database
     let add_to_database = format!(
-        "INSERT INTO environmental_actions (action, topic) VALUES ('{}', '{}');",
-        form.action, form.topic
+        "INSERT INTO quotes_table (quote, author) VALUES ('{}', '{}');",
+        form.quote, form.author
     );
 
     db.execute(Statement::from_string(DbBackend::Sqlite, add_to_database))
         .await
-        .expect("Failed to insert into environmental_actions table");
+        .expect("Failed to insert into quotes_table");
 
     //gets data from backend if successful and displays it on a redirect
     //as a table.
@@ -112,10 +112,10 @@ async fn get_index() -> Html<&'static str> {
             Author: Unknown, Spanish dicho <br/> 
             </h1>
             <form action="/add_to_database" method="post">
-                <label for="action">Quote:</label><br>
-                <input type="text" id="action" name="action"/><br><br>
-                <label for="topic">Author:</label><br>
-                <input type="text" id="topic" name="topic"/><br><br>
+                <label for="entry">Quote:</label><br>
+                <input type="text" id="quote" name="quote"/><br><br>
+                <label for="entry">Author:</label><br>
+                <input type="text" id="author" name="author"/><br><br>
                 <button type="submit">Add to Quote Database</button>
             </form>            
         </body>
@@ -134,24 +134,24 @@ async fn main() -> io::Result<()> {
         .await
         .expect("Failed to connect to the entries_database");
 
-    // Create the environmental_actions table if it doesn't exist
-    let create_environmental_actions_table_sql = r#"
-        CREATE TABLE IF NOT EXISTS environmental_actions (
+    // Create the quotes table if it doesn't exist
+    let create_quotes_table_sql = r#"
+        CREATE TABLE IF NOT EXISTS quotes_table (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            action TEXT NOT NULL,
-            topic TEXT NOT NULL
+            quote TEXT NOT NULL,
+            author TEXT NOT NULL
         );
     "#;
 
     //executes the SQL statement stmt that was created above
     db.execute(Statement::from_string(
         DbBackend::Sqlite,
-        create_environmental_actions_table_sql.to_string(),
+        create_quotes_table_sql.to_string(),
     ))
     .await
-    .expect("Failed to create environmental_actions table");
+    .expect("Failed to create quotes_table");
 
-    println!("environmental_actions table in entries_database is set up safely for async!");
+    println!("quotes_table table in entries_database is set up safely for async!");
 
     // Use Arc to share the database safely in async code
     let state = Arc::new(db);
