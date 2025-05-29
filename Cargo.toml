@@ -1,12 +1,17 @@
 [package]
-name = "rust_final_project"
+name = "quote-server"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.7"                     # Web framework
-tokio = { version = "1", features = ["full"] }  # Async runtime
-sea-orm = { version = "0.12", features = ["sqlx-sqlite", "runtime-tokio-native-tls"] } # ORM & SQLite
-serde = { version = "1", features = ["derive"] }  # Serialization/Deserialization
-tower-http = { version = "0.5", features = ["fs"] }  # Optional: Serve static files
+askama = "0.13.1"
+axum = "0.8.3"
+mime = "0.3.17"
+tokio = { version = "1.44.2", features = ["full"] }  # Async runtime
+#sea-orm = { version = "0.12", features = ["sqlx-sqlite", "runtime-tokio-native-tls"] } # ORM & SQLite
+#serde = { version = "1", features = ["derive"] }  # Serialization/Deserialization
+
+[dependencies.tower-http]
+version = "0.6.2"
+features = ["fs"]
  

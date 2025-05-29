@@ -1,4 +1,40 @@
 //adapting this over to using Axum from actix was achieved with help from DeepSeek.
+mod quote;
+mod templates;
+use crate::templates::IndexTemplate;
+extern crate mime;
+use crate::quote::THE_QUOTE;
+use crate::quote::Quote;
+use axum::{self, response, routing};
+use tokio::net;
+use tower_http::services;
+
+
+async fn get_quote() -> response::Html<String> {
+    let quote = IndexTemplate::quote(&THE_QUOTE);
+    response::Html(quote.to_string())
+}
+
+async fn serve() -> Result<(), Box<dyn std::error::Error>> {
+    let app = axum::Router::new()
+        .route("/", routing::get(get_quote))
+        .route_service(
+            "/quote.css",
+            services::ServeFile::new_with_mime("assets/static/quote.css", &mime::TEXT_CSS),
+        );
+    let listener = net::TcpListener::bind("127.0.0.1:3000").await?;
+    axum::serve(listener, app).await?;
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+    if let Err(err) = serve().await {
+        eprintln!("quote-server-askama: error: {}", err);
+        std::process::exit(1);
+    }
+}
+/*
 use axum::{
     extract::{Form, State},
     response::Html,
@@ -15,6 +51,23 @@ use tokio::net::TcpListener;
 struct Quotes{
     quote: String,
     author: String,
+}
+
+
+// in the preview, the `source="…"` or `path="…"` argument is provided for you
+
+struct HelloWorld<'a> {
+    user: &'a str,
+    first_visit: bool,
+}
+struct Quotes<'a>{
+    quote: &'a str,
+    author: &'a str,
+}
+
+fn main() {
+    let quotes = Quotes { quote: "Carpe Diem" , author: "teacher"}; // instantiate your struct
+    println!("{}", quotes.render().unwrap()); // then render it.
 }
 
 async fn retrieve_data(
@@ -40,7 +93,7 @@ async fn retrieve_data(
 }
 
 //receives input from the database and pushes it into a table format in html
-
+/* 
 fn format_data_as_html(data_retrieved: Vec<Quotes>) -> String {
     let mut to_display = String::from("<table border='1'><tr><th>Quote</th><th>Author</th></tr>");
 
@@ -52,8 +105,10 @@ fn format_data_as_html(data_retrieved: Vec<Quotes>) -> String {
     }
     
     to_display.push_str("</table>");
+
     to_display
 }
+*/
 
 async fn add_data_handler(
     State(state): State<Arc<DatabaseConnection>>,
@@ -92,9 +147,12 @@ async fn add_data_handler(
 async fn get_data(State(state): State<Arc<DatabaseConnection>>) -> Html<String> {
     let db = state;
     let data = retrieve_data(db).await.expect("Failure to get data");
-    let data_post = format_data_as_html(data);
+   // let data_post = format_data_as_html(data);
+    let data_post = QuoteStruct { quote: "Carpe Diem" , author: "teacher"}; // instantiate your struct
+   
 
-    Html(data_post)
+
+    Html(data_post.render().unwrap());
 }
 
 async fn get_index() -> Html<&'static str> {
@@ -123,7 +181,7 @@ async fn get_index() -> Html<&'static str> {
         "#,
     )
 }
-
+ 
 #[tokio::main]
 async fn main() -> io::Result<()> {
     // SQLite database file
@@ -170,3 +228,4 @@ async fn main() -> io::Result<()> {
 
     Ok(())
 }
+*/    
