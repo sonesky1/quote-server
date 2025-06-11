@@ -14,7 +14,7 @@ use tokio::net::TcpListener;
 use askama::Template;
 
 #[derive(Template, Debug)]
-#[template(path = "templates/index.html")]
+#[template(path = "index.html")]
 struct HomepageTemplate {
     quote: String,
     author: String,
@@ -32,7 +32,7 @@ async fn retrieve_data(
     db: Arc<DatabaseConnection>,
 ) -> Result<Vec<Quotes>, DbErr> {
     // prep query for SQL
-    let sql = "SELECT * FROM quote_table ORDER BY RAND( ) LIMIT 1";
+    let sql = "SELECT * FROM quote_table ORDER BY RANDOM() LIMIT 1";
     let statement = Statement::from_string(DbBackend::Sqlite, sql.to_owned());
 
     let db = db;
@@ -145,7 +145,9 @@ async fn get_data(State(state): State<Arc<DatabaseConnection>>) -> Html<String> 
     let first_quote = &quotes[0];
     let template = HomepageTemplate {
     quote: first_quote.quote.clone(),
+    //quote: "hello".to_string(),
     author: first_quote.author.clone(),
+    //author: "author".to_string(),
     stylesheet: "/static/css/style.css".to_string(),
     }; 
      axum::response::Html(template.render().expect("Failed to render template"))
@@ -215,7 +217,7 @@ async fn main() -> io::Result<()> {
 
     // Build the router with the shared state
     let app = Router::new()
-        .route("/", get(get_index))
+        .route("/", get(get_data))
         .route("/add_to_database", post(add_data_handler))
         .with_state(state);
         //.with_state(state.into());
