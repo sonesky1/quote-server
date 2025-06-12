@@ -1,19 +1,13 @@
-.quoter {
-    font-weight: bold;
-}
-
-.authory {
-    font-style: italic;
-}
-
-.annotation {
-    font-style: italic;
-    font-size: 60%;
-}
 
 h1 {
     font-weight: bold;
     font-size: 150%;
+}
+
+h2 {
+    font-style:bold;
+    font-size:200%;
+    color:blue;
 }
 
 .quote {
