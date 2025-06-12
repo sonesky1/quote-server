@@ -2,20 +2,19 @@
         <html>
         <head>
             <title>Quote Server</title>
-             <link rel="stylesheet" href="{{ stylesheet }}">
+      
+            <link rel="stylesheet" href="{{ stylesheet }}">
         </head>
         <body>
-            <h1>QUOTE SERVER: <br /> Please enter a quote or word of wisdom in first box. Please enter an author in the second box <br \><br \>
-            EXAMPLE: <br />
-            Quote:  El barato cuesta caro<br />
-            Author: Unknown, Spanish dicho <br/> 
-            </h1>
-             <div class="quote">
-      <span class="quoter">Quote</span><br/>
-      <span class="authory">Author</span><br/>
-      <span class="quoter">{{ quote }}</span><br/>
-      <span class="authory">{{ author }}</span><br/>
-  </div>
+            <h1>Welcome to the Quote Server: </h1><br /><br/>
+            <h2>
+            Here is a Random Quote From our Database: <br /><br />
+            Quote:  {{ quote }} <br />
+            Author: {{author}} <br/> 
+            </h2>
+            
+            <br /> Please Add a Quote to Database: </br><br \>
+         
             <form action="/add_to_database" method="post">
                 <label for="entry">Quote:</label><br>
                 <input type="text" id="quote" name="quote"/><br><br>

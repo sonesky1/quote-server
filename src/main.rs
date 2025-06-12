@@ -50,45 +50,6 @@ async fn retrieve_data(
      
 }
 
-// async fn retrieve_data(
-//     db: Arc<DatabaseConnection>,
-// ) -> Result<Vec<Quotes>, DbErr> {
-//     // prep query for SQL
-//     let sql = "SELECT action, topic FROM environmental_actions";
-//     let statement = Statement::from_string(DbBackend::Sqlite, sql.to_owned());
-
-//     let db = db;
-//     //execute query and map results to the quotes
-//     let data_retrieved = db
-//         .query_all(statement)
-//         .await?
-//         .into_iter()
-//         .map(|row| Quotes {
-//             action: row.try_get::<String>("", "action").unwrap(),
-//             topic: row.try_get::<String>("", "topic").unwrap(),
-//         })
-//         .collect();
-
-//     Ok(data_retrieved)
-// }
-
-//receives input from the database and pushes it into a table format in html
-
-// fn format_data_as_html(data_retrieved: Vec<Quotes>) -> String {
-//     let mut to_display = String::from("<table border='1'><tr><th>Action</th><th>Topic</th></tr>");
-
-//     for data in data_retrieved {
-//         to_display.push_str(&format!(
-//             "<tr><td>{}</td><td>{}</td></tr>",
-//             data.action, data.topic
-//         ));
-//     }
-    
-//     to_display.push_str("</table>");
-//     to_display
-// }
-
-
 
 async fn add_data_handler(
     State(state): State<Arc<DatabaseConnection>>,
@@ -123,20 +84,7 @@ async fn add_data_handler(
     response
 }
 
-// //retrieves data from database
-// async fn get_data(State(state): State<Arc<DatabaseConnection>>) -> Html<String> {
-//     let db = state;
-//     let data = retrieve_data(db).await.expect("Failure to get data");
-//     let data_post = format_data_as_html(data);
 
-//     Html(data_post)
-// }
-
-// now I render it directly inside of the handler
-
-
-     
-      
 
 
 async fn get_data(State(state): State<Arc<DatabaseConnection>>) -> Html<String> {
@@ -145,41 +93,14 @@ async fn get_data(State(state): State<Arc<DatabaseConnection>>) -> Html<String> 
     let first_quote = &quotes[0];
     let template = HomepageTemplate {
     quote: first_quote.quote.clone(),
-    //quote: "hello".to_string(),
     author: first_quote.author.clone(),
-    //author: "author".to_string(),
     stylesheet: "/static/css/style.css".to_string(),
     }; 
      axum::response::Html(template.render().expect("Failed to render template"))
 }
 
 
-async fn get_index() -> Html<&'static str> {
-    Html(
-        r#"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Quote Server</title>
-        </head>
-        <body>
-            <h1>QUOTE SERVER: <br \> Please enter a quote or word of wisdom in first box. Please enter an author in the second box <br \><br \>
-            EXAMPLE: <br \>
-            Quote: El barato cuesta caro (What is cheap is expensive) <br \>
-            Author: Unknown, Spanish dicho <br/> 
-            </h1>
-            <form action="/add_to_database" method="post">
-                <label for="action">Quote:</label><br>
-                <input type="text" id="action" name="action"/><br><br>
-                <label for="topic">Author:</label><br>
-                <input type="text" id="topic" name="topic"/><br><br>
-                <button type="submit">Add to Quote Database</button>
-            </form>            
-        </body>
-        </html>
-        "#,
-    )
-}
+
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
