@@ -13,6 +13,12 @@ h2 {
     font-size:150%;
     color:rgb(255, 119, 0);
 }
+
+.button:hover {
+      background-color:#002ead;
+      transition: 0.7s;
+}
+
 </style>
 
         <head>
@@ -28,14 +34,16 @@ h2 {
             Author: {{author}} <br/> 
             </h2>
             
-            <br /> Please Add a Quote to Database: </br><br \>
+            <br /> To View a New Random Quote from past entries: </br></br>
+             Please enter a new quote below: </br><br \>
          
             <form action="/add_to_database" method="post">
                 <label for="entry">Quote:</label><br>
-                <input type="text" id="quote" name="quote"/><br><br>
+                <input type="text" id="quote" name="quote" required/><br><br>
                 <label for="entry">Author:</label><br>
-                <input type="text" id="author" name="author"/><br><br>
-                <button type="submit">Add to Quote Database</button>
+                <input type="text" id="author" name="author" required/><br><br>
+                <form action="...">
+                <button type="submit">Add Quote</button>
             </form>             
         </body>
         </html>

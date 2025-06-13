@@ -21,48 +21,44 @@ struct HomepageTemplate {
     stylesheet: String,
 }
 
-
 #[derive(Deserialize)]
-struct Quotes{
+struct Quotes {
     quote: String,
     author: String,
 }
 
-async fn retrieve_data(
-    db: Arc<DatabaseConnection>,
-) -> Result<Vec<Quotes>, DbErr> {
+async fn retrieve_data(db: Arc<DatabaseConnection>) -> Result<Vec<Quotes>, DbErr> {
     // prep query for SQL
     let sql = "SELECT * FROM quote_table ORDER BY RANDOM() LIMIT 1";
     let statement = Statement::from_string(DbBackend::Sqlite, sql.to_owned());
 
     let db = db;
     //execute query and map results to the quotes
-    let rows = db
-        .query_all(statement)
-        .await?;
+    let rows = db.query_all(statement).await?;
 
-         let quotes = rows.into_iter().map(|row| Quotes {
-        quote: row.try_get("", "quote").unwrap_or_default(),
-        author: row.try_get("", "author").unwrap_or_default(),
-    }).collect();
+    let quotes = rows
+        .into_iter()
+        .map(|row| Quotes {
+            quote: row.try_get("", "quote").unwrap_or_default(),
+            author: row.try_get("", "author").unwrap_or_default(),
+        })
+        .collect();
 
     Ok(quotes)
-     
 }
-
 
 async fn add_data_handler(
     State(state): State<Arc<DatabaseConnection>>,
     Form(form): Form<Quotes>,
 ) -> Html<String> {
-    if form.quote.is_empty() || form.author.is_empty() {
-        //if either form is empty then an error message is returned
-        return Html(
-            "Please enter a quote in the first box. \
-            Please type an author in the second box"
-                .to_string(),
-        );
-    }
+    // if form.quote.is_empty() || form.author.is_empty() {
+    //     //if either form is empty then an error message is returned
+    //     return Html(
+    //         "Please enter a quote in the first box. \
+    //         Please type an author in the second box"
+    //             .to_string(),
+    //     );
+    // }
 
     // Access the shared database state
 
@@ -73,6 +69,8 @@ async fn add_data_handler(
         form.quote, form.author
     );
 
+    
+
     db.execute(Statement::from_string(DbBackend::Sqlite, add_to_database))
         .await
         .expect("Failed to insert into quote_table");
@@ -81,30 +79,35 @@ async fn add_data_handler(
     //as a table.
     let response: Html<String> = get_data(axum::extract::State(state)).await;
 
+
     response
 }
-
-
-
 
 async fn get_data(State(state): State<Arc<DatabaseConnection>>) -> Html<String> {
     let db = state;
     let quotes = retrieve_data(db).await.expect("Failure to get data");
-    let first_quote = &quotes[0];
+    // Default hardcoded values
+    let mut random_quote = "Slow but steady wins the race".to_string();
+    let mut random_author = "Anonymous Turtle".to_string();
+    if !quotes.is_empty() {
+        
+            let first_quote: &Quotes = &quotes[0];
+            random_quote =  first_quote.quote.clone();
+            random_author = first_quote.quote.clone();
+    }
+  
+    
     let template = HomepageTemplate {
-    quote: first_quote.quote.clone(),
-    author: first_quote.author.clone(),
-    stylesheet: "/static/css/style.css".to_string(),
-    }; 
-     axum::response::Html(template.render().expect("Failed to render template"))
+        quote: random_quote,
+        author: random_author,
+        stylesheet: "/assets/static/quote.css".to_string(),
+    };
+    axum::response::Html(template.render().expect("Failed to render template"))
 }
-
-
-
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
-// You'll need to derive Debug for your struct:
+    // You'll need to derive Debug for your struct:
 
     // SQLite database file
     let db_url = "sqlite://entries_database.db?mode=rwc";
@@ -141,7 +144,7 @@ async fn main() -> io::Result<()> {
         .route("/", get(get_data))
         .route("/add_to_database", post(add_data_handler))
         .with_state(state);
-        //.with_state(state.into());
+    
 
     // Serve the app
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
@@ -150,4 +153,3 @@ async fn main() -> io::Result<()> {
 
     Ok(())
 }
-
