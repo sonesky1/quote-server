@@ -51,14 +51,13 @@ async fn add_data_handler(
     State(state): State<Arc<DatabaseConnection>>,
     Form(form): Form<Quotes>,
 ) -> Html<String> {
-    // if form.quote.is_empty() || form.author.is_empty() {
-    //     //if either form is empty then an error message is returned
-    //     return Html(
-    //         "Please enter a quote in the first box. \
-    //         Please type an author in the second box"
-    //             .to_string(),
-    //     );
-    // }
+    if form.quote.is_empty() || form.author.is_empty() {
+        let response: Html<String> = get_data(axum::extract::State(state)).await;
+
+        return response
+    }
+    
+   
 
     // Access the shared database state
 
@@ -93,7 +92,7 @@ async fn get_data(State(state): State<Arc<DatabaseConnection>>) -> Html<String> 
         
             let first_quote: &Quotes = &quotes[0];
             random_quote =  first_quote.quote.clone();
-            random_author = first_quote.quote.clone();
+            random_author = first_quote.author.clone();
     }
   
     
