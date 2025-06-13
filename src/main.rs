@@ -54,10 +54,8 @@ async fn add_data_handler(
     if form.quote.is_empty() || form.author.is_empty() {
         let response: Html<String> = get_data(axum::extract::State(state)).await;
 
-        return response
+        return response;
     }
-    
-   
 
     // Access the shared database state
 
@@ -68,8 +66,6 @@ async fn add_data_handler(
         form.quote, form.author
     );
 
-    
-
     db.execute(Statement::from_string(DbBackend::Sqlite, add_to_database))
         .await
         .expect("Failed to insert into quote_table");
@@ -77,7 +73,6 @@ async fn add_data_handler(
     //gets data from backend if successful and displays it on a redirect
     //as a table.
     let response: Html<String> = get_data(axum::extract::State(state)).await;
-
 
     response
 }
@@ -89,13 +84,11 @@ async fn get_data(State(state): State<Arc<DatabaseConnection>>) -> Html<String> 
     let mut random_quote = "Slow but steady wins the race".to_string();
     let mut random_author = "Anonymous Turtle".to_string();
     if !quotes.is_empty() {
-        
-            let first_quote: &Quotes = &quotes[0];
-            random_quote =  first_quote.quote.clone();
-            random_author = first_quote.author.clone();
+        let first_quote: &Quotes = &quotes[0];
+        random_quote = first_quote.quote.clone();
+        random_author = first_quote.author.clone();
     }
-  
-    
+
     let template = HomepageTemplate {
         quote: random_quote,
         author: random_author,
@@ -143,7 +136,6 @@ async fn main() -> io::Result<()> {
         .route("/", get(get_data))
         .route("/add_to_database", post(add_data_handler))
         .with_state(state);
-    
 
     // Serve the app
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
